@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi & Penilaian SD (Kelas 1 - 6)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border-radius: 12px; border: none; }
+        .bg-custom { background-color: #1e3c72; color: white; }
+        .hidden { display: none !important; }
+        @media print {
+            .no-print { display: none !important; }
+            .card { border: none !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HALAMAN LOGIN -->
+    <div id="loginSection" class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="card shadow-lg p-4" style="max-width: 400px; width: 100%;">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-school text-primary display-4 mb-2"></i>
+                <h4 class="fw-bold">Login Sistem Sekolah</h4>
+                <p class="text-muted small">Silakan masuk dengan akun Anda</p>
+            </div>
+            <div id="loginAlert" class="alert alert-danger hidden" role="alert">
+                Username atau password salah!
+            </div>
+            <form id="formLogin">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="Masukkan username" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Masukkan password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold"><i class="fa-solid fa-right-to-bracket me-2"></i> Masuk</button>
+            </form>
+            <div class="mt-3 text-center text-muted small">
+                <p class="mb-0"><strong>Akun Uji Coba:</strong></p>
+                <span>Guru: <code>guru</code> / <code>1234</code></span><br>
+                <span>Admin: <code>admin</code> / <code>admin123</code></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- HALAMAN UTAMA APLIKASI (Disembunyikan sebelum login) -->
+    <div id="appSection" class="hidden">
+        <!-- Header / Navbar -->
+        <nav class="navbar navbar-dark bg-custom shadow-sm mb-4">
+            <div class="container d-flex justify-content-between align-items-center">
+                <span class="navbar-brand mb-0 h1"><i class="fa-solid fa-school me-2"></i> Aplikasi Absensi & Nilai Sekolah</span>
+                <div class="text-white d-flex align-items-center">
+                    <span class="me-3 d-none d-md-inline" id="userDisplay"><i class="fa-solid fa-user me-1"></i> Pengguna</span>
+                    <button class="btn btn-outline-light btn-sm no-print" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mb-5">
+            
+            <!-- Filter Kelas & Tanggal -->
+            <div class="card shadow-sm p-3 mb-4 no-print">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Pilih Kelas:</label>
+                        <select id="selectKelas" class="form-select" onchange="updateInfoKelas()">
+                            <option value="Kelas 1">Kelas 1</option>
+                            <option value="Kelas 2">Kelas 2</option>
+                            <option value="Kelas 3">Kelas 3</option>
+                            <option value="Kelas 4">Kelas 4</option>
+                            <option value="Kelas 5">Kelas 5</option>
+                            <option value="Kelas 6">Kelas 6</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Tanggal/Hari:</label>
+                        <input type="date" id="inputTanggal" class="form-control">
+                    </div>
+                    <div class="col-md-4 text-end align-self-end">
+                        <button class="btn btn-success me-2" onclick="window.print()"><i class="fa-solid fa-print"></i> Cetak / Simpan PDF</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Judul Laporan Saat Dicetak -->
+            <div class="text-center mb-4">
+                <h3 class="fw-bold" id="judulKelas">DAFTAR ABSENSI & NILAI - KELAS 1</h3>
+                <p class="text-muted" id="subJudulTanggal">Tanggal: -</p>
+            </div>
+
+            <!-- Kartu Summary Rekapitulasi -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-2 col-6">
+                    <div class="card p-3 bg-primary text-white text-center">
+                        <h6>Total Siswa</h6>
+                        <h3 id="statTotal">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="card p-3 bg-success text-white text-center">
+                        <h6>Hadir (H)</h6>
+                        <h3 id="statHadir">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="card p-3 bg-info text-white text-center">
+                        <h6>Izin (I)</h6>
+                        <h3 id="statIzin">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="card p-3 bg-warning text-dark text-center">
+                        <h6>Sakit (S)</h6>
+                        <h3 id="statSakit">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="card p-3 bg-danger text-white text-center">
+                        <h6>Alpa (A)</h6>
+                        <h3 id="statAlpa">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
+                    <div class="card p-3 bg-dark text-white text-center">
+                        <h6>Rata Nilai</h6>
+                        <h3 id="statRataNilai">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Tambah Siswa (No Print) -->
+            <div class="card shadow-sm p-4 mb-4 no-print">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-plus me-2"></i>Tambah / Input Data Siswa</h5>
+                <form id="formSiswa" class="row g-3">
+                    <div class="col-md-2">
+                        <input type="text" id="nisn" class="form-control" placeholder="NISN / No. Absen" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" id="nama" class="form-control" placeholder="Nama Lengkap Siswa" required>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="status" class="form-select">
+                            <option value="Hadir">Hadir</option>
+                            <option value="Izin">Izin</option>
+                            <option value="Sakit">Sakit</option>
+                            <option value="Alpa">Alpa</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <input type="number" id="tugas" class="form-control" placeholder="Tugas" min="0" max="100" value="0">
+                    </div>
+                    <div class="col-md-1">
+                        <input type="number" id="uts" class="form-control" placeholder="UTS" min="0" max="100" value="0">
+                    </div>
+                    <div class="col-md-1">
+                        <input type="number" id="uas" class="form-control" placeholder="UAS" min="0" max="100" value="0">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-plus"></i> Tambah</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabel Data Siswa -->
+            <div class="card shadow-sm p-3">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle text-center" id="tabelData">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;">No</th>
+                                <th>NISN / No. Absen</th>
+                                <th>Nama Siswa</th>
+                                <th>Status Kehadiran</th>
+                                <th>Nilai Tugas</th>
+                                <th>Nilai UTS</th>
+                                <th>Nilai UAS</th>
+                                <th>Nilai Rata-Rata</th>
+                                <th class="no-print" style="width: 100px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodySiswa">
+                            <!-- Data akan ditambahkan secara dinamis -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Data Login Terdaftar
+        const users = {
+            "guru": "1234",
+            "admin": "admin123"
+        };
+
+        let dataSiswa = [];
+
+        // Set tanggal hari ini
+        document.getElementById('inputTanggal').valueAsDate = new Date();
+
+        // Fitur Login
+        document.getElementById('formLogin').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const unameInput = document.getElementById('username').value.trim();
+            const passInput = document.getElementById('password').value.trim();
+            const alertBox = document.getElementById('loginAlert');
+
+            if (users[unameInput] && users[unameInput] === passInput) {
+                alertBox.classList.add('hidden');
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('appSection').classList.remove('hidden');
+                document.getElementById('userDisplay').innerHTML = `<i class="fa-solid fa-user me-1"></i> ${unameInput.toUpperCase()}`;
+                updateInfoKelas();
+            } else {
+                alertBox.classList.remove('hidden');
+            }
+        });
+
+        // Fitur Logout
+        function logout() {
+            document.getElementById('appSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginAlert').classList.add('hidden');
+        }
+
+        function updateInfoKelas() {
+            const kelas = document.getElementById('selectKelas').value;
+            const tgl = document.getElementById('inputTanggal').value;
+            document.getElementById('judulKelas').innerText = `DAFTAR ABSENSI & NILAI - ${kelas.toUpperCase()}`;
+            document.getElementById('subJudulTanggal').innerText = `Tanggal: ${tgl}`;
+        }
+
+        document.getElementById('inputTanggal').addEventListener('change', updateInfoKelas);
+
+        // Handle Submit Form Data Siswa
+        document.getElementById('formSiswa').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const nisn = document.getElementById('nisn').value;
+            const nama = document.getElementById('nama').value;
+            const status = document.getElementById('status').value;
+            const tugas = parseFloat(document.getElementById('tugas').value) || 0;
+            const uts = parseFloat(document.getElementById('uts').value) || 0;
+            const uas = parseFloat(document.getElementById('uas').value) || 0;
+
+            const rataRata = ((tugas + uts + uas) / 3).toFixed(1);
+
+            dataSiswa.push({ nisn, nama, status, tugas, uts, uas, rataRata: parseFloat(rataRata) });
+            
+            // Reset Input
+            document.getElementById('nisn').value = '';
+            document.getElementById('nama').value = '';
+            document.getElementById('tugas').value = '0';
+            document.getElementById('uts').value = '0';
+            document.getElementById('uas').value = '0';
+            
+            renderTable();
+        });
+
+        // Render Tabel
+        function renderTable() {
+            const tbody = document.getElementById('tbodySiswa');
+            tbody.innerHTML = '';
+
+            let countHadir = 0, countIzin = 0, countSakit = 0, countAlpa = 0;
+            let totalNilai = 0;
+
+            dataSiswa.forEach((siswa, index) => {
+                if (siswa.status === 'Hadir') countHadir++;
+                if (siswa.status === 'Izin') countIzin++;
+                if (siswa.status === 'Sakit') countSakit++;
+                if (siswa.status === 'Alpa') countAlpa++;
+
+                totalNilai += siswa.rataRata;
+
+                let badgeClass = 'bg-success';
+                if (siswa.status === 'Izin') badgeClass = 'bg-info';
+                if (siswa.status === 'Sakit') badgeClass = 'bg-warning text-dark';
+                if (siswa.status === 'Alpa') badgeClass = 'bg-danger';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${siswa.nisn}</td>
+                    <td class="text-start">${siswa.nama}</td>
+                    <td><span class="badge ${badgeClass}">${siswa.status}</span></td>
+                    <td>${siswa.tugas}</td>
+                    <td>${siswa.uts}</td>
+                    <td>${siswa.uas}</td>
+                    <td class="fw-bold">${siswa.rataRata}</td>
+                    <td class="no-print">
+                        <button class="btn btn-sm btn-outline-danger" onclick="hapusSiswa(${index})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update Statistik
+            document.getElementById('statTotal').innerText = dataSiswa.length;
+            document.getElementById('statHadir').innerText = countHadir;
+            document.getElementById('statIzin').innerText = countIzin;
+            document.getElementById('statSakit').innerText = countSakit;
+            document.getElementById('statAlpa').innerText = countAlpa;
+
+            const avgClass = dataSiswa.length > 0 ? (totalNilai / dataSiswa.length).toFixed(1) : 0;
+            document.getElementById('statRataNilai').innerText = avgClass;
+
+            updateInfoKelas();
+        }
+
+        // Hapus Data
+        function hapusSiswa(index) {
+            dataSiswa.splice(index, 1);
+            renderTable();
+        }
+    </script>
+</body>
+</html>
